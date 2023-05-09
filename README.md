@@ -32,5 +32,5 @@ WARNING:
     Currenlty due to aiofiles not supporting an aiofiles.copy() function in Windows SHIFTv2 will read every file
     in a chunk of files to write before writing. This means you may not have enough memory to run SHIFTv2 and
     if so would result in a memory error and or long hang time. This is something that will be updated in later
-    releases. So be careful what directories you shift. Take care of file sizes becaue files will be written/read
+    releases. So be careful what directories you shift. Take care of file sizes because files will be written/read
     up to 100 at a time.
