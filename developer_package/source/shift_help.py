@@ -11,6 +11,8 @@ def display_help():
     print(' -s         Source         Specify source PATH. Files will be copied from source PATH.')
     print(' -d         Destination    Specify destination PATH. Files will be copied to (and removed from) destination PATH.')
     print('')
+    print(' Example: shift.py -v -mirror --no-bin -s "D:\\Documents" -d "X:\\Documents"')
+    print('')
     print(' -v         Verbosity      Increase Verbosity.')
     print(' -h         Help           Displays this help message.')
     print()
