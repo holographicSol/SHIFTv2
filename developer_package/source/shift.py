@@ -16,7 +16,6 @@ See shift -h for help.
 
 """
 
-import arg_parser
 import asyncio
 import aiofiles
 import aiofiles.os
@@ -30,7 +29,6 @@ import multiprocessing
 import os
 import scanfs
 from send2trash import send2trash
-import shutil
 import shift_help
 import sys
 import time
