@@ -25,6 +25,7 @@ SHIFTv2: Copy, Update, Mirror. (File backup software).
 IMPORTANT:
 
     Never use with systems that allow single quotes and or double quotes in file/directory paths.
+    Untested with volume names.
 
 
 WARNING:
