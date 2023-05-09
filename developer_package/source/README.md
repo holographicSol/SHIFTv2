@@ -1,3 +1,4 @@
+
 [ SHIFTv2 ]
 
      -copy      Copy           Only copy source files that are not in destination.
@@ -9,7 +10,9 @@
     
      -v         Verbosity      Increase Verbosity.
      -h         Help           Displays this help message.
-
+    
+     (Example: shift -v -mirror --no-bin -s "D:\Documents" -d "X:\Documents")
+    
      Written by Benjamin Jack Cullen.
 
 
