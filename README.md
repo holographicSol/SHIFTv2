@@ -11,3 +11,12 @@
      -h         Help           Displays this help message.
 
      Written by Benjamin Jack Cullen.
+
+
+SHIFTv2: Copy, Update, Mirror. (File backup software).
+
+   1. scandir source, scandir destination, scandir destination directories (3x async multiprocess).
+   2. stat source, destination files for modified times, sizes. (2x async multiprocess). -> Check types in lists and len().
+   3. enumerate tasks: copy new, update existing, delete. (3x async multiprocess). -> Check types in lists and len().
+   4. run tasks: copy new, update existing, delete. (async only).
+   5. finally if mirror then delete directories not exist in source. (synchronous because we're deleting tree's).
