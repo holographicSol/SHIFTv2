@@ -20,3 +20,8 @@ SHIFTv2: Copy, Update, Mirror. (File backup software).
    3. enumerate tasks: copy new, update existing, delete. (3x async multiprocess).
    4. run tasks: copy new, update existing, delete. (async only).
    5. finally if mirror then delete directories not exist in source. (synchronous because we're deleting tree's).
+
+
+IMPORTANT:
+
+    Never use with systems that allow single quotes and or double quotes in file/directory paths.
