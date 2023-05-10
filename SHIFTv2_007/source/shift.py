@@ -643,11 +643,11 @@ if __name__ == '__main__':
 
         # mode
         mode = False
-        if '-copy' in stdin:
+        if '--copy' in stdin:
             mode = int(0)
-        elif '-update' in stdin:
+        elif '--update' in stdin:
             mode = int(1)
-        elif '-mirror' in stdin:
+        elif '--mirror' in stdin:
             mode = int(2)
 
         # use recycle bin
@@ -723,7 +723,7 @@ if __name__ == '__main__':
                         # run once
                         asyncio.run(main(_dataclass=shift_dataclass))
                     elif live_mode is True:
-                        # keep running
+                        # keep running  # todo: optionally throttle in live mode to reduce resource consumption.
                         while True:
                             clear_console()
                             try:

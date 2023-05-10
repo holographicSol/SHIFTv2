@@ -2,8 +2,8 @@
 [ SHIFTv2 ]
 
     --copy      Copy           Only copy source files that are not in destination.
-    --update    Update         Copy (-copy) and update (modified timestamp comparison).
-    --mirror    Mirror         Copy, update and delete.
+    --update    Update         Copy (--copy) and Update (modified timestamp comparison).
+    --mirror    Mirror         Copy, Update and Delete.
     --no-bin    No Recycle     Do not send files to a recycle bin. (Used with -mirror).
     --live      Live Mode      Enables continuous backup mode (Live Mode).
     -s          Source         Specify source PATH. Files will be copied from source PATH.
