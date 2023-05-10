@@ -607,7 +607,7 @@ if __name__ == '__main__':
     if '--debug' in sys.argv:
         debug = True
 
-    # debug
+    # no input confirmation
     no_input = False
     if '-y' in sys.argv:
         no_input = True
