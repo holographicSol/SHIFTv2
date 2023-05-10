@@ -1,14 +1,16 @@
-
 [ SHIFTv2 ]
 
     --copy      Copy           Only copy source files that are not in destination.
-    --update    Update         Copy (-copy) and update (modified timestamp comparison).
-    --mirror    Mirror         Copy, update and delete.
+    --update    Update         Copy (--copy) and Update (modified timestamp comparison).
+    --mirror    Mirror         Copy, Update and Delete.
     --no-bin    No Recycle     Do not send files to a recycle bin. (Used with -mirror).
     --live      Live Mode      Enables continuous backup mode (Live Mode).
+                                Only if manual/task-scheduling(Windows)/chron-job(Linux) is less preferable.
     -s          Source         Specify source PATH. Files will be copied from source PATH.
     -d          Destination    Specify destination PATH. Files will be copied to (and removed from) destination PATH.
 
+    -cmax       CMAX           Specify async multiprocess chunk sizes in digits (Performance +-).
+                                Optional. Default 100. Accepted values in range 1-100.
     -y          Assume Yes     Disables confirmation input prompts.
     -v          Verbosity      Increase Verbosity.
     -h          Help           Displays this help message.
