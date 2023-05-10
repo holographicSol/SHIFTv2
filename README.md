@@ -26,7 +26,7 @@ SHIFTv2 is file backup software. Asynchronous & multiprocess.
     Written by Benjamin Jack Cullen.
 
 
-[ SHIFTv2 ] Copy New, Update, Mirror.:
+[ SHIFTv2 ] Copy New, Update, Mirror:
 
    1. scandir source, scandir destination, scandir destination directories (3x async multiprocess).
    2. stat source, destination files for modified times, sizes. (2x(+pool) async multiprocess).
