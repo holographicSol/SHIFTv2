@@ -1,16 +1,17 @@
 
 [ SHIFTv2 ]
 
-    -copy      Copy           Only copy source files that are not in destination.
-    -update    Update         Copy (-copy) and update (modified timestamp comparison).
-    -mirror    Mirror         Copy, update and delete.
-    --no-bin   No Recycle     Do not send files to a recycle bin. (Used with -mirror).
-    -s         Source         Specify source PATH. Files will be copied from source PATH.
-    -d         Destination    Specify destination PATH. Files will be copied to (and removed from) destination PATH.
+    --copy      Copy           Only copy source files that are not in destination.
+    --update    Update         Copy (-copy) and update (modified timestamp comparison).
+    --mirror    Mirror         Copy, update and delete.
+    --no-bin    No Recycle     Do not send files to a recycle bin. (Used with -mirror).
+    --live      Live Mode      Enables continuous backup mode (Live Mode).
+    -s          Source         Specify source PATH. Files will be copied from source PATH.
+    -d          Destination    Specify destination PATH. Files will be copied to (and removed from) destination PATH.
 
-    -y         Assume Yes     Disables confirmation input prompts.
-    -v         Verbosity      Increase Verbosity.
-    -h         Help           Displays this help message.
+    -y          Assume Yes     Disables confirmation input prompts.
+    -v          Verbosity      Increase Verbosity.
+    -h          Help           Displays this help message.
 
     (Example: shift -v -mirror --no-bin -s "D:\Documents" -d "X:\Documents")
 
