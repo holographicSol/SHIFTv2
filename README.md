@@ -42,3 +42,4 @@ IMPORTANT:
 
     Never use with systems that allow single quotes and or double quotes in file/directory paths.
     Untested with volume names.
+    Untested with network paths.
