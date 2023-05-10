@@ -45,6 +45,7 @@ c_data = 'BL'
 
 @dataclass(slots=True)
 class ShiftDataClass:
+    cmax: int
     live_mode: bool
     debug: bool
     verbose: bool
@@ -429,7 +430,7 @@ async def main(_dataclass: dataclasses.dataclass):
     # stat source and destination (2x async multi-processes)
     print(f'{get_dt()} {cprint.color(s=f"[RUNNING] [STAT]", c=c_tag)}')
     t_stat = time.perf_counter()
-    chunks_files_src = tabulate_helper2.chunk_data(data=_files_src[0], chunk_size=128)
+    chunks_files_src = tabulate_helper2.chunk_data(data=_files_src[0], chunk_size=_dataclass.cmax)
     worker_stat_results_src = Worker(
         target=main_worker_stat_results,
         args=(chunks_files_src,),
@@ -437,7 +438,7 @@ async def main(_dataclass: dataclasses.dataclass):
     )
     stat_results_dst = []
     if _mode == int(1) or _mode == int(2):
-        chunks_files_dst = tabulate_helper2.chunk_data(data=_files_dst[0], chunk_size=128)
+        chunks_files_dst = tabulate_helper2.chunk_data(data=_files_dst[0], chunk_size=_dataclass.cmax)
         worker_stat_results_dst = Worker(
             target=main_worker_stat_results,
             args=(chunks_files_dst,),
@@ -469,7 +470,7 @@ async def main(_dataclass: dataclasses.dataclass):
     # enumerate tasks ahead (3x async multi-processes)
     print(f'{get_dt()} {cprint.color(s=f"[RUNNING] [ENUMERATION]", c=c_tag)}')
     t_enum = time.perf_counter()
-    chunks_files_src = tabulate_helper2.chunk_data(data=stat_results_src, chunk_size=128)
+    chunks_files_src = tabulate_helper2.chunk_data(data=stat_results_src, chunk_size=_dataclass.cmax)
     worker_enum_copy_tasks = Worker(
         target=main_enum_copy_tasks,
         args=(chunks_files_src, {'dir_src': dir_src, 'dir_dst': dir_dst}),
@@ -480,7 +481,7 @@ async def main(_dataclass: dataclasses.dataclass):
         args=(chunks_files_src, {'dir_src': dir_src, 'dir_dst': dir_dst}),
         kwargs={}
     )
-    chunks_files_dst = tabulate_helper2.chunk_data(data=stat_results_dst, chunk_size=128)
+    chunks_files_dst = tabulate_helper2.chunk_data(data=stat_results_dst, chunk_size=_dataclass.cmax)
     worker_enum_delete_tasks = Worker(
         target=main_enum_delete_tasks,
         args=(chunks_files_dst, {'dir_src': dir_src, 'dir_dst': dir_dst}),
@@ -554,34 +555,39 @@ async def main(_dataclass: dataclasses.dataclass):
         # initiate lists for final results further sorted
         _copied, _updated, _deleted, _failed_copy, _failed_update, _failed_delete = [], [], [], [], [], []
 
-        # todo: optional prompt
+        # ask user if they wish to continue
         if await user_accept(_dataclass=_dataclass) is True:
 
             # display final tasks are running
             print(f'{get_dt()} {cprint.color(s=f"[RUNNING] [MAIN OPERATION]", c=c_tag)}')
 
-            # run copy
-            chunks = tabulate_helper2.chunk_data(data=_copy_tasks, chunk_size=100)
+            # main operation time
+            t_main_operation = time.perf_counter()
+
+            # run copy (async)
+            chunks = tabulate_helper2.chunk_data(data=_copy_tasks, chunk_size=_dataclass.cmax)
             for chunk in chunks:
                 tasks = []
                 [tasks.append(asyncio.create_task(async_write(_data=sublist, _dataclass=_dataclass))) for sublist in chunk]
                 _copied_final_results.append(await asyncio.gather(*tasks))
 
-            # run update
-            chunks = tabulate_helper2.chunk_data(data=_update_tasks, chunk_size=100)
+            # run update (async)
+            chunks = tabulate_helper2.chunk_data(data=_update_tasks, chunk_size=_dataclass.cmax)
             for chunk in chunks:
                 tasks = []
                 [tasks.append(asyncio.create_task(async_write(_data=sublist, _dataclass=_dataclass))) for sublist in chunk]
                 _updated_final_results.append(await asyncio.gather(*tasks))
 
-            # run delete
+            # run delete (sync only)
             tasks = []
             [tasks.append(asyncio.create_task(async_remove_file(_data=sublist, _dataclass=_dataclass))) for sublist in _delete_tasks]
             _deleted_final_results.append(await asyncio.gather(*tasks))
 
-            # finally remove dirs not in source
+            # finally remove dirs not in source (sync only)
             if _mode == int(2):
                 [_remove_dirs(_path=item_dir, _dataclass=_dataclass) for item_dir in _directories_dst[0]]
+
+            print(f'{get_dt()} {cprint.color(s=f"[MAIN OPERATION] [TIME]", c=c_tag)} {cprint.color(s=time.perf_counter() - t_main_operation, c=c_data)}\n' if shift_dataclass.verbose is True else "", end="")
 
         else:
             print(f'{get_dt()} {cprint.color(s=f"[ABORTING] [MAIN OPERATION]", c=c_tag)}')
@@ -636,9 +642,19 @@ if __name__ == '__main__':
     if '-h' in stdin:
         shift_help.display_help()
     else:
+        # chunk max (performance+-). Allow 1-100 to avoid potential OS ERROR: 'too many open files'
+        cmax = 100
+        if '-cmax' in stdin:
+            cmax_check = stdin[stdin.index('-cmax') + 1]
+            cmax_check = str(cmax_check)
+            if cmax_check.isdigit():
+                cmax_check = int(cmax_check)
+                if cmax in range(1, 100):
+                    cmax = cmax_check
+
         # live (run continuously until keyboard interrupt) currently recommended to use CTRL+PAUSE/BREAK.
         live_mode = False
-        if '--live-mode' in stdin:
+        if '--live' in stdin:
             live_mode = True
 
         # mode
@@ -711,7 +727,8 @@ if __name__ == '__main__':
         if str(mode).isdigit():
             if source:
                 if destination:
-                    shift_dataclass = ShiftDataClass(live_mode=live_mode,
+                    shift_dataclass = ShiftDataClass(cmax=cmax,
+                                                     live_mode=live_mode,
                                                      debug=debug,
                                                      verbose=verbose,
                                                      no_input=no_input,
