@@ -26,7 +26,7 @@ SHIFTv2 is file backup software. Asynchronous & multiprocess.
     Written by Benjamin Jack Cullen.
 
 
-SHIFTv2: Copy, Update, Mirror. (File backup software).
+[ SHIFTv2 ] Copy New, Update, Mirror.:
 
    1. scandir source, scandir destination, scandir destination directories (3x async multiprocess).
    2. stat source, destination files for modified times, sizes. (2x(+pool) async multiprocess).
@@ -34,17 +34,11 @@ SHIFTv2: Copy, Update, Mirror. (File backup software).
    4. run tasks: copy new, update existing, delete. (async only).
    5. finally if mirror then delete directories not exist in source. (synchronous because we're deleting tree's).
 
+   Lists created during steps 1-3 are checked multiple times before allowing each sublist into step 4. These
+   checks include list length checks and list index type checks.
+
 
 IMPORTANT:
 
     Never use with systems that allow single quotes and or double quotes in file/directory paths.
     Untested with volume names.
-
-
-WARNING:
-
-    Currenlty due to aiofiles not supporting an aiofiles.copy() function in Windows SHIFTv2 will read every file
-    in a chunk of files to write before writing. This means you may not have enough memory to run SHIFTv2 and
-    if so would result in a memory error and or long hang time. This is something that will be updated in later
-    releases. So be careful what directories you shift. Take care of file sizes because up to 100 files will be
-    written/read asynchronousy.
