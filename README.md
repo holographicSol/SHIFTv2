@@ -1,4 +1,4 @@
-SHIFTv2 is file backup software.
+SHIFTv2 is file backup software. Asynchronous & multiprocess.
 
     Useful for dealing with a lot of files automatically and with zero data collection, no
     signing your life away and open readable source code. Run manually or use a task schedular.
