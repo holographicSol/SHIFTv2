@@ -1,3 +1,9 @@
+SHIFTv2 is file backup software.
+
+    Useful for dealing with a lot of files automatically and with zero data collection, no
+    signing your life away and open readable source code. Run manually or use a task schedular.
+
+
 [ SHIFTv2 ]
 
     --copy      Copy           Only copy source files that are not in destination.
