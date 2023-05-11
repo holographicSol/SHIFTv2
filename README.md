@@ -21,7 +21,9 @@ SHIFTv2 is file backup software. Asynchronous & multiprocess.
     -v          Verbosity      Increase Verbosity.
     -h          Help           Displays this help message.
 
-    (Example: shift -v -mirror --no-bin -s "D:\Documents" -d "X:\Documents")
+   (Standard Example: shift -v -mirror --no-bin -s "D:\Documents" -d "X:\Documents")
+   (Standard Example: shift -v -mirror --no-bin -s "/home/FooBar/Documents" -d "/media/FooBar/Documents")
+   (Network Example:  shift --mirror -v -s "D:\Documents" -d "\\Desktop-FooBar\Documents\")
 
     Written by Benjamin Jack Cullen.
 
