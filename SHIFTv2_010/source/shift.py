@@ -223,7 +223,6 @@ async def get_copy_tasks(sublist: list, dir_src: str, dir_dst: str) -> list:
     hypo_path = sublist[0]
     hypo_path = hypo_path[len(dir_src):]
     hypo_path = dir_dst + hypo_path
-    # sublist.append(hypo_path)
     # path checks: does hypo path start with user specified destination (extra safety layer)
     if hypo_path.startswith(dir_dst):
         # test hypo path exists
