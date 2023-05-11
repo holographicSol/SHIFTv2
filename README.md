@@ -6,24 +6,27 @@ SHIFTv2 is file backup software. Asynchronous & multiprocess.
 
 [ SHIFTv2 ]
 
-    --copy      Copy           Only copy source files that are not in destination.
-    --update    Update         Copy (--copy) and Update (modified timestamp comparison).
+    --copy      Copy New       Only copy source files that are not in destination.
+    --update    Update         Copy (--copy) and Update (--update) (Compares modified times and file sizes in bytes).
     --mirror    Mirror         Copy, Update and Delete.
     --no-bin    No Recycle     Do not send files to a recycle bin. (Used with -mirror).
     --live      Live Mode      Enables continuous backup mode (Live Mode).
-                                Only if manual/task-scheduling(Windows)/chron-job(Linux) is less preferable.
+                                Use only if more suitable than manual/task-scheduling(Windows)/chron-job(Linux) (Recommended).
     -s          Source         Specify source PATH. Files will be copied from source PATH.
+                                Omit a trailing single backslash or it will escape the -s string.
     -d          Destination    Specify destination PATH. Files will be copied to (and removed from) destination PATH.
+                                Omit a trailing single backslash or it will escape the -d string.
 
     -cmax       CMAX           Specify async multiprocess chunk sizes in digits (Performance +-).
                                 Optional. Default 100. Accepted values in range 1-100.
     -y          Assume Yes     Disables confirmation input prompts.
     -v          Verbosity      Increase Verbosity.
+    -vv         Verbosity+     Further Increase Verbosity.
     -h          Help           Displays this help message.
 
-   (Standard Example: shift -v -mirror --no-bin -s "D:\Documents" -d "X:\Documents")
-   (Standard Example: shift -v -mirror --no-bin -s "/home/FooBar/Documents" -d "/media/FooBar/Documents")
-   (Network Example:  shift --mirror -v -s "D:\Documents" -d "\\Desktop-FooBar\Documents\")
+        (Standard Example: shift -v -mirror --no-bin -s "D:\Documents" -d "X:\Documents")
+        (Standard Example: shift -v -mirror --no-bin -s "/home/FooBar/Documents" -d "/media/FooBar/Documents")
+        (Network Example:  shift --mirror -v -s "D:\Documents" -d "\\Desktop-FooBar\Documents")
 
     Written by Benjamin Jack Cullen.
 
@@ -43,5 +46,3 @@ SHIFTv2 is file backup software. Asynchronous & multiprocess.
 IMPORTANT:
 
     Never use with systems that allow single quotes and or double quotes in file/directory paths.
-    Untested with volume names.
-    Untested with network paths.
