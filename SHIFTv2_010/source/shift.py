@@ -118,8 +118,6 @@ def remove_file(_file: str):
 
 
 def _remove_dirs(_path: str, _dataclass: dataclasses.dataclass):
-    # get the directory the file was deleted in
-    _idx_current_dir = _path.rfind('\\')
     # create inverted hypo path: hypothetical path created from source directory and destination file
     hypo_path = _path[len(_dataclass.destination):]
     hypo_path = _dataclass.source + hypo_path
