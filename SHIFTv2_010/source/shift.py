@@ -124,10 +124,12 @@ def _remove_dirs(_path: str, _dataclass: dataclasses.dataclass):
     # test inverted hypo path exists
     if not os.path.exists(hypo_path):
         try:
-            if os.path.exists(_path):
-                if _dataclass.verbose_level_0 is True:
-                    print(f'{get_dt()} {cprint.color(s="[DELETING] [DIRECTORY]", c="Y")} {cprint.color(s=_path, c=c_data)}')
-                shutil.rmtree(_path, ignore_errors=False)
+            # final path checks: does path start with user specified destination (extra safety layer)
+            if _path.startswith(_dataclass.destination):
+                if os.path.exists(_path):
+                    if _dataclass.verbose_level_0 is True:
+                        print(f'{get_dt()} {cprint.color(s="[DELETING] [DIRECTORY]", c="Y")} {cprint.color(s=_path, c=c_data)}')
+                    shutil.rmtree(_path, ignore_errors=False)
         except FileNotFoundError as e:
             print(f'{get_dt()} [FileNotFoundError] [DELETE DIR] {_path} {str(e)}')
         except PermissionError as e:
@@ -137,16 +139,18 @@ def _remove_dirs(_path: str, _dataclass: dataclasses.dataclass):
 
 
 async def async_remove_file(_data: list, _dataclass: dataclasses.dataclass) -> list:
-    if _dataclass.verbose_level_0 is True:
-        print(f'{get_dt()} {cprint.color(s="[DELETING] [FILE]", c="Y")} {cprint.color(s=_data[0], c=c_data)}')
     try:
-        # move to trash
-        if _dataclass.no_bin is False:
-            await asyncio.to_thread(remove_file, _file=_data[0])
-        # os remove
-        elif _dataclass.no_bin is True:
-            os.remove(_data[0])
-        _data.append(True)
+        # final path checks: does path start with user specified destination (extra safety layer)
+        if _data[0].startswith(_dataclass.destination):
+            if _dataclass.verbose_level_0 is True:
+                print(f'{get_dt()} {cprint.color(s="[DELETING] [FILE]", c="Y")} {cprint.color(s=_data[0], c=c_data)}')
+            # move to trash
+            if _dataclass.no_bin is False:
+                await asyncio.to_thread(remove_file, _file=_data[0])
+            # os remove
+            elif _dataclass.no_bin is True:
+                os.remove(_data[0])
+            _data.append(True)
     except FileNotFoundError as e:
         print(f'{get_dt()} [FileNotFoundError] [DELETE FILE] {_data} {str(e)}')
         _data.append(f'[FileNotFoundError] [DELETE FILE] {str(e)}')
@@ -161,38 +165,44 @@ async def async_remove_file(_data: list, _dataclass: dataclasses.dataclass) -> l
 
 
 async def async_write(_data: list, _dataclass: dataclasses.dataclass()) -> list:
-    if _dataclass.verbose_level_0 is True:
-        if _data[4] == '[COPYING]':
-            print(f'{get_dt()} {cprint.color(s="[COPYING NEW]", c="G")} {cprint.color(s=str(_data[0]), c=c_data)} {cprint.color(s="[->]", c="G")} {cprint.color(s=str(_data[3]), c=c_data)}')
-        elif _data[4] == '[UPDATING]':
-            print(f'{get_dt()} {cprint.color(s="[UPDATING]", c="B")} {cprint.color(s=str(_data[0]), c=c_data)} {cprint.color(s="[->]", c="B")} {cprint.color(s=str(_data[3]), c=c_data)}')
-    # create directory tree
-    idx_variable_tree = _data[3].rfind('\\')
-    variable_tree = _data[3][:idx_variable_tree]
-    try:
-        # make directories if needed
-        await aiofiles.os.makedirs(variable_tree, exist_ok=True)
-        if await aiofiles.os.path.exists(variable_tree):
-            # Windows
-            if sys.platform.startswith('win'):
-                await asyncio.to_thread(shutil.copyfile, _data[0], _data[3])
-            # Linux:
-            elif sys.platform.startswith('linux'):
-                await aiofiles.os.sendfile(_data[3], _data[0], 0, _data[2])
-            # check if destination file exists
-            if await aiofiles.os.path.exists(_data[3]):
-                # get bytes of destination file
-                stat_file = await aiofiles.os.stat(_data[3])
-                sz_dst = stat_file.st_size
-                # compare source file bytes to destination file bytes
-                if sz_dst == _data[2]:
-                    _data.append(True)
-    except FileNotFoundError as e:
-        print(f'{get_dt()} [FileNotFoundError] {_data} {str(e)}')
-        _data.append(str(e))
-    except PermissionError as e:
-        print(f'{get_dt()} [PermissionError] {_data} {str(e)}')
-        _data.append(str(e))
+    # final path checks: do paths start with user specified source and destination (extra safety layer)
+    if _data[0].startswith(_dataclass.source) and _data[3].startswith(_dataclass.destination):
+        # create directory tree path name
+        idx_variable_tree = _data[3].rfind('\\')
+        variable_tree = _data[3][:idx_variable_tree]
+        try:
+            # make directories if needed
+            await aiofiles.os.makedirs(variable_tree, exist_ok=True)
+            if await aiofiles.os.path.exists(variable_tree):
+                # display operation
+                if _dataclass.verbose_level_0 is True:
+                    if _data[4] == '[COPYING]':
+                        print(f'{get_dt()} {cprint.color(s="[COPYING NEW]", c="G")} {cprint.color(s=str(_data[0]), c=c_data)} {cprint.color(s="[->]", c="G")} {cprint.color(s=str(_data[3]), c=c_data)}')
+                    elif _data[4] == '[UPDATING]':
+                        print(f'{get_dt()} {cprint.color(s="[UPDATING]", c="B")} {cprint.color(s=str(_data[0]), c=c_data)} {cprint.color(s="[->]", c="B")} {cprint.color(s=str(_data[3]), c=c_data)}')
+
+                # Windows
+                if sys.platform.startswith('win'):
+                    await asyncio.to_thread(shutil.copyfile, _data[0], _data[3])
+                # Linux:
+                elif sys.platform.startswith('linux'):
+                    await aiofiles.os.sendfile(_data[3], _data[0], 0, _data[2])
+
+                # check if destination file exists
+                if await aiofiles.os.path.exists(_data[3]):
+                    # get bytes of destination file
+                    stat_file = await aiofiles.os.stat(_data[3])
+                    sz_dst = stat_file.st_size
+                    # compare source file bytes to destination file bytes
+                    if sz_dst == _data[2]:
+                        _data.append(True)
+
+        except FileNotFoundError as e:
+            print(f'{get_dt()} [FileNotFoundError] {_data} {str(e)}')
+            _data.append(str(e))
+        except PermissionError as e:
+            print(f'{get_dt()} [PermissionError] {_data} {str(e)}')
+            _data.append(str(e))
     return _data
 
 
@@ -213,16 +223,18 @@ async def get_copy_tasks(sublist: list, dir_src: str, dir_dst: str) -> list:
     hypo_path = sublist[0]
     hypo_path = hypo_path[len(dir_src):]
     hypo_path = dir_dst + hypo_path
-    sublist.append(hypo_path)
-    # test hypo path exists
-    if not await aiofiles.os.path.exists(hypo_path):
-        # hypo path exists: allow one instance of hypo path in sublist
-        if hypo_path not in sublist:
-            sublist.append(hypo_path)
-        # hypo path exists: allow one instance of task in sublist
-        if '[COPYING]' not in sublist:
-            sublist.append('[COPYING]')
-            return sublist
+    # sublist.append(hypo_path)
+    # path checks: does hypo path start with user specified destination (extra safety layer)
+    if hypo_path.startswith(dir_dst):
+        # test hypo path exists
+        if not await aiofiles.os.path.exists(hypo_path):
+            # hypo path exists: allow one instance of hypo path in sublist
+            if hypo_path not in sublist:
+                sublist.append(hypo_path)
+            # hypo path exists: allow one instance of task in sublist
+            if '[COPYING]' not in sublist:
+                sublist.append('[COPYING]')
+                return sublist
 
 
 async def get_update_tasks(sublist: list, dir_src: str, dir_dst: str) -> list:
@@ -230,21 +242,23 @@ async def get_update_tasks(sublist: list, dir_src: str, dir_dst: str) -> list:
     hypo_path = sublist[0]
     hypo_path = hypo_path[len(dir_src):]
     hypo_path = dir_dst + hypo_path
-    # test hypo path exists
-    if await aiofiles.os.path.exists(hypo_path):
-        # hypo path exists: stat hypo path
-        stat_file = await aiofiles.os.stat(hypo_path)
-        mtime = stat_file.st_mtime
-        sz = stat_file.st_size
-        # hypo path exists: compare modified times and sizes
-        if float(sublist[1]) > float(mtime) or int(sublist[2]) != int(sz):
-            # hypo path exists: allow one instance of hypo path in sublist
-            if hypo_path not in sublist:
-                sublist.append(hypo_path)
-            # hypo path exists: allow one instance of task in sublist
-            if '[UPDATING]' not in sublist:
-                sublist.append('[UPDATING]')
-                return sublist
+    # path checks: does hypo path start with user specified destination (extra safety layer)
+    if hypo_path.startswith(dir_dst):
+        # test hypo path exists
+        if await aiofiles.os.path.exists(hypo_path):
+            # hypo path exists: stat hypo path
+            stat_file = await aiofiles.os.stat(hypo_path)
+            mtime = stat_file.st_mtime
+            sz = stat_file.st_size
+            # hypo path exists: compare modified times and sizes
+            if float(sublist[1]) > float(mtime) or int(sublist[2]) != int(sz):
+                # hypo path exists: allow one instance of hypo path in sublist
+                if hypo_path not in sublist:
+                    sublist.append(hypo_path)
+                # hypo path exists: allow one instance of task in sublist
+                if '[UPDATING]' not in sublist:
+                    sublist.append('[UPDATING]')
+                    return sublist
 
 
 async def get_delete_tasks(sublist: list, dir_src: str, dir_dst: str) -> list:
@@ -252,15 +266,17 @@ async def get_delete_tasks(sublist: list, dir_src: str, dir_dst: str) -> list:
     hypo_path = sublist[0]
     hypo_path = hypo_path[len(dir_dst):]
     hypo_path = dir_src + hypo_path
-    # test inverted hypo path exists
-    if not await aiofiles.os.path.exists(hypo_path):
-        # inverted hypo path exists: allow one instance of hypo path in sublist
-        if hypo_path not in sublist:
-            sublist.append(hypo_path)
-        # inverted hypo path exists: allow one instance of task in sublist
-        if '[DELETING]' not in sublist:
-            sublist.append('[DELETING]')
-            return sublist
+    # path checks: does hypo path start with user specified source (extra safety layer)
+    if hypo_path.startswith(dir_src):
+        # test inverted hypo path exists
+        if not await aiofiles.os.path.exists(hypo_path):
+            # inverted hypo path exists: allow one instance of hypo path in sublist
+            if hypo_path not in sublist:
+                sublist.append(hypo_path)
+            # inverted hypo path exists: allow one instance of task in sublist
+            if '[DELETING]' not in sublist:
+                sublist.append('[DELETING]')
+                return sublist
 
 
 async def scan_source(**kwargs) -> list:
@@ -585,7 +601,7 @@ async def main(_dataclass: dataclasses.dataclass):
                     [_copied.append(sublist) for sublist in _copied_final_results if sublist[-1] is True and sublist[4] == '[COPYING]']
 
                 # run update (async)
-                if _dataclass.mode == int(0) or _dataclass.mode == int(1):
+                if _dataclass.mode == int(1) or _dataclass.mode == int(2):
                     chunks = tabulate_helper2.chunk_data(data=_update_tasks, chunk_size=_dataclass.cmax)
                     for chunk in chunks:
                         tasks = []
