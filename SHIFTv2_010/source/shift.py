@@ -118,7 +118,6 @@ def remove_file(_file: str):
 
 
 def _remove_dirs(_path: str, _dataclass: dataclasses.dataclass):
-    # This function is synchronous because it can delete trees
     # get the directory the file was deleted in
     _idx_current_dir = _path.rfind('\\')
     # create inverted hypo path: hypothetical path created from source directory and destination file
@@ -133,13 +132,10 @@ def _remove_dirs(_path: str, _dataclass: dataclasses.dataclass):
                 shutil.rmtree(_path, ignore_errors=False)
         except FileNotFoundError as e:
             print(f'{get_dt()} [FileNotFoundError] [DELETE DIR] {_path} {str(e)}')
-            # _data.append(f'[FileNotFoundError] [DELETE DIR] {str(e)}')
         except PermissionError as e:
             print(f'{get_dt()} [PermissionError] [DELETE DIR] {_path} {str(e)}')
-            # _data.append(f'[PermissionError] [DELETE DIR] {str(e)}')
         except OSError as e:
             print(f'{get_dt()} [OSError] [DELETE DIR] {_path} {str(e)}')
-            # _data.append(f'[OSError] [DELETE DIR] {str(e)}')
 
 
 async def async_remove_file(_data: list, _dataclass: dataclasses.dataclass) -> list:
@@ -153,7 +149,6 @@ async def async_remove_file(_data: list, _dataclass: dataclasses.dataclass) -> l
         elif _dataclass.no_bin is True:
             os.remove(_data[0])
         _data.append(True)
-
     except FileNotFoundError as e:
         print(f'{get_dt()} [FileNotFoundError] [DELETE FILE] {_data} {str(e)}')
         _data.append(f'[FileNotFoundError] [DELETE FILE] {str(e)}')
@@ -180,15 +175,12 @@ async def async_write(_data: list, _dataclass: dataclasses.dataclass()) -> list:
         # make directories if needed
         await aiofiles.os.makedirs(variable_tree, exist_ok=True)
         if await aiofiles.os.path.exists(variable_tree):
-
             # Windows
             if sys.platform.startswith('win'):
                 await asyncio.to_thread(shutil.copyfile, _data[0], _data[3])
-
             # Linux:
             elif sys.platform.startswith('linux'):
                 await aiofiles.os.sendfile(_data[3], _data[0], 0, _data[2])
-
             # check if destination file exists
             if await aiofiles.os.path.exists(_data[3]):
                 # get bytes of destination file
@@ -246,8 +238,7 @@ async def get_update_tasks(sublist: list, dir_src: str, dir_dst: str) -> list:
         stat_file = await aiofiles.os.stat(hypo_path)
         mtime = stat_file.st_mtime
         sz = stat_file.st_size
-        # hypo path exists: check if source file modified time is greater than destination file modified time &
-        # check if the number of bytes are the same
+        # hypo path exists: compare modified times and sizes
         if float(sublist[1]) > float(mtime) or int(sublist[2]) != int(sz):
             # hypo path exists: allow one instance of hypo path in sublist
             if hypo_path not in sublist:
@@ -380,6 +371,9 @@ async def user_accept(_dataclass: dataclasses.dataclass):
 
 
 async def main(_dataclass: dataclasses.dataclass):
+    # --------------------------------------------------------------------------------------------> ENTRY START
+
+    # output header
     print('')
     print('')
     if _dataclass.live_mode is False:
@@ -387,181 +381,190 @@ async def main(_dataclass: dataclasses.dataclass):
     elif _dataclass.live_mode is True:
         print(f'{cprint.color(s=f"[          SHIFTv2         ]", c="W")} {cprint.color(s="[LIVE]", c="R")}')
     print('')
-    # variably display selected mode
-    _modes_list = ['[COPY MISSING]', '[UPDATE]', '[MIRROR]']
-    _mode = _dataclass.mode
-    print(f'{get_dt()} {_modes_list[_mode]}')
 
-    # display specified source, destination (-s, -d)
+    # display selected mode
+    _modes_list = ['[COPY MISSING]', '[UPDATE]', '[MIRROR]']
+    print(f'{get_dt()} {_modes_list[_dataclass.mode]}')
+
+    # display specified source and destination
     dir_src = _dataclass.source
     dir_dst = _dataclass.destination
     print(f'{get_dt()} {cprint.color(s=f"[SOURCE]", c=c_tag)} {cprint.color(s=dir_src, c=c_data)}')
     print(f'{get_dt()} {cprint.color(s=f"[DESTINATION]", c=c_tag)} {cprint.color(s=dir_dst, c=c_data)}')
 
-    # scandir source and destination (3x async multi-processes)
+    # initiation
+    _files_src, _files_dst, _directories_dst = [], [], []
+    worker_scan_source, worker_scan_destination, worker_scan_destination_directories = None, None, None
+    worker_stat_results_src, worker_stat_results_dst = None, None
+    _copy_tasks, _update_tasks, _delete_tasks = [], [], []
+    worker_enum_copy_tasks, worker_enum_update_tasks, worker_enum_delete_tasks = None, None, None
+    _copied_final_results, _updated_final_results, _deleted_final_results = [], [], []
+    _copied, _updated, _deleted, _failed_copy, _failed_update, _failed_delete = [], [], [], [], [], []
+
+    # --------------------------------------------------------------------------------------------> SCANDIR START
+
+    # scandir source, destination and destination directories (3x async multi-processes)
     print(f'{get_dt()} {cprint.color(s=f"[RUNNING] [SCAN]", c=c_tag)}')
     t_scandir = time.perf_counter()
-    worker_scan_source = Worker(
-        target=scan_source,
-        kwargs={'dir_src': dir_src}
-    )
-    worker_scan_destination = Worker(
-        target=scan_destination,
-        kwargs={'dir_dst': dir_dst}
-    )
-    if _mode == 2:
+    # source files
+    if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        worker_scan_source = Worker(
+            target=scan_source,
+            kwargs={'dir_src': dir_src}
+        )
+        worker_scan_source.start()
+    # destination files
+    if _dataclass.mode == int(2):
+        worker_scan_destination = Worker(
+            target=scan_destination,
+            kwargs={'dir_dst': dir_dst}
+        )
+        worker_scan_destination.start()
+        # destination directories
         worker_scan_destination_directories = Worker(
             target=scan_destination_directories,
             kwargs={'dir_dst': dir_dst}
         )
         worker_scan_destination_directories.start()
-    worker_scan_source.start()
-    worker_scan_destination.start()
-    _files_src = await worker_scan_source.join()
-    _files_dst = await worker_scan_destination.join()
-    if _mode == 2:
+    # source files results
+    if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        _files_src = await worker_scan_source.join()
+        print(f'{get_dt()} {cprint.color(s=f"[SCAN] [SOURCE] [FILES]", c=c_tag)} {cprint.color(s=len(_files_src[0]), c=c_data)}')
+    # destination files results
+    if _dataclass.mode == 2:
+        _files_dst = await worker_scan_destination.join()
+        print(f'{get_dt()} {cprint.color(s=f"[SCAN] [DESTINATION] [FILES]", c=c_tag)} {cprint.color(s=len(_files_dst[0]), c=c_data)}')
         _directories_dst = await worker_scan_destination_directories.join()
-    # debug: display lists
-    print(f'{get_dt()} {cprint.color(s=f"[SCAN] [SOURCE] [FILES]", c=c_tag)} {cprint.color(s=_files_src, c=c_debug)}\n' if shift_dataclass.debug is True else "", end="")
-    print(f'{get_dt()} {cprint.color(s=f"[SCAN] [DESTINATION] [FILES]", c=c_tag)} {cprint.color(s=_files_dst, c=c_debug)}\n' if shift_dataclass.debug is True else "", end="")
-    # display lengths of lists and time
-    print(f'{get_dt()} {cprint.color(s=f"[SCAN] [TIME]", c=c_tag)} {cprint.color(s=time.perf_counter()-t_scandir, c=c_data)}\n' if shift_dataclass.verbose_level_0 is True else "", end="")
-    print(f'{get_dt()} {cprint.color(s=f"[SCAN] [SOURCE] [FILES]", c=c_tag)} {cprint.color(s=len(_files_src[0]), c=c_data)}')
-    print(f'{get_dt()} {cprint.color(s=f"[SCAN] [DESTINATION] [FILES]", c=c_tag)} {cprint.color(s=len(_files_dst[0]), c=c_data)}')
-    if _mode == 2:
         print(f'{get_dt()} {cprint.color(s=f"[SCAN] [DESTINATION] [DIRECTORIES]", c=c_tag)} {cprint.color(s=len(_directories_dst[0]), c=c_data)}')
+    # display scandir time
+    print(f'{get_dt()} {cprint.color(s=f"[SCAN] [TIME]", c=c_tag)} {cprint.color(s=time.perf_counter()-t_scandir, c=c_data)}\n' if shift_dataclass.verbose_level_0 is True else "", end="")
 
-    # stat source and destination (2x async multi-processes)
+    # --------------------------------------------------------------------------------------------> STAT FILES START
+
+    # stat source and destination (2x(+pools) async multi-processes)
     print(f'{get_dt()} {cprint.color(s=f"[RUNNING] [STAT]", c=c_tag)}')
     t_stat = time.perf_counter()
-    chunks_files_src = tabulate_helper2.chunk_data(data=_files_src[0], chunk_size=_dataclass.cmax)
-    worker_stat_results_src = Worker(
-        target=main_worker_stat_results,
-        args=(chunks_files_src,),
-        kwargs={}
-    )
-    stat_results_dst = []
-    if _mode == int(1) or _mode == int(2):
-        chunks_files_dst = tabulate_helper2.chunk_data(data=_files_dst[0], chunk_size=_dataclass.cmax)
-        worker_stat_results_dst = Worker(
+    # source files
+    if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        _files_src = tabulate_helper2.chunk_data(data=_files_src[0], chunk_size=_dataclass.cmax)
+        worker_stat_results_src = Worker(
             target=main_worker_stat_results,
-            args=(chunks_files_dst,),
+            args=(_files_src,),
             kwargs={}
         )
-        # start destination scandir worker
+        worker_stat_results_src.start()
+    # destination files
+    if _dataclass.mode == int(2):
+        _files_dst = tabulate_helper2.chunk_data(data=_files_dst[0], chunk_size=_dataclass.cmax)
+        worker_stat_results_dst = Worker(
+            target=main_worker_stat_results,
+            args=(_files_dst,),
+            kwargs={}
+        )
         worker_stat_results_dst.start()
-    # start source scandir worker
-    worker_stat_results_src.start()
     # wait for results
-    stat_results_src = await worker_stat_results_src.join()
-    if _mode == int(1) or _mode == int(2):
-        stat_results_dst = await worker_stat_results_dst.join()
-
-    # un-chunk and qualify/disqualify lists: (vet results while un-chunking the list)
-    stat_results_src[:] = [item for sublist in stat_results_src for item in sublist if item is not None and len(item) == 3 and isinstance(item[1], float) and isinstance(item[2], int)]
-    stat_results_dst[:] = [item for sublist in stat_results_dst for item in sublist if item is not None and len(item) == 3 and isinstance(item[1], float) and isinstance(item[2], int)]
-    # display results if in debug mode
-    print(f'{get_dt()} [STAT SRC FILES] {stat_results_src}\n' if shift_dataclass.debug is True else "", end="")
-    print(f'{get_dt()} [STAT DST FILES] {stat_results_dst}\n' if shift_dataclass.debug is True else "", end="")
+    if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        _files_src = await worker_stat_results_src.join()
+    if _dataclass.mode == int(2):
+        _files_dst = await worker_stat_results_dst.join()
+    # format source results and check type instances
+    if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        _files_src[:] = [item for sublist in _files_src for item in sublist if item is not None and len(item) == 3 and isinstance(item[1], float) and isinstance(item[2], int)]
+        print(f'{get_dt()} [STAT SRC FILES] {_files_src}\n' if shift_dataclass.debug is True else "", end="")
+    # format destination results and check type instances
+    if _dataclass.mode == int(2):
+        _files_dst[:] = [item for sublist in _files_dst for item in sublist if item is not None and len(item) == 3 and isinstance(item[1], float) and isinstance(item[2], int)]
+        print(f'{get_dt()} [STAT DST FILES] {_files_dst}\n' if shift_dataclass.debug is True else "", end="")
     # display stat files time
     print(f'{get_dt()} {cprint.color(s=f"[STAT] [TIME]", c=c_tag)} {cprint.color(s=time.perf_counter()-t_stat, c=c_data)}\n' if shift_dataclass.verbose_level_0 is True else "", end="")
 
-    # initiate lists to populate with lists of upcoming tasks
-    _copy_tasks = []
-    _update_tasks = []
-    _delete_tasks = []
+    # --------------------------------------------------------------------------------------------> ENUM TASKS START
 
-    # enumerate tasks ahead (3x async multi-processes)
+    # enumerate tasks ahead (3x(+pools) async multi-processes)
     print(f'{get_dt()} {cprint.color(s=f"[RUNNING] [ENUMERATION]", c=c_tag)}')
     t_enum = time.perf_counter()
-    chunks_files_src = tabulate_helper2.chunk_data(data=stat_results_src, chunk_size=_dataclass.cmax)
-    worker_enum_copy_tasks = Worker(
-        target=main_enum_copy_tasks,
-        args=(chunks_files_src, {'dir_src': dir_src, 'dir_dst': dir_dst}),
-        kwargs={}
-    )
-    worker_enum_update_tasks = Worker(
-        target=main_enum_update_tasks,
-        args=(chunks_files_src, {'dir_src': dir_src, 'dir_dst': dir_dst}),
-        kwargs={}
-    )
-    chunks_files_dst = tabulate_helper2.chunk_data(data=stat_results_dst, chunk_size=_dataclass.cmax)
-    worker_enum_delete_tasks = Worker(
-        target=main_enum_delete_tasks,
-        args=(chunks_files_dst, {'dir_src': dir_src, 'dir_dst': dir_dst}),
-        kwargs={}
-    )
-
-    # start enumeration workers
-    worker_enum_copy_tasks.start()
-    if _mode == int(1) or _mode == int(2):
+    # enumerate copy new
+    if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        _files_src = tabulate_helper2.chunk_data(data=_files_src, chunk_size=_dataclass.cmax)
+        worker_enum_copy_tasks = Worker(
+            target=main_enum_copy_tasks,
+            args=(_files_src, {'dir_src': dir_src, 'dir_dst': dir_dst}),
+            kwargs={}
+        )
+        worker_enum_copy_tasks.start()
+    # enumerate update
+    if _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        worker_enum_update_tasks = Worker(
+            target=main_enum_update_tasks,
+            args=(_files_src, {'dir_src': dir_src, 'dir_dst': dir_dst}),
+            kwargs={}
+        )
         worker_enum_update_tasks.start()
-    if _mode == int(2):
+    # enumerate delete
+    if _dataclass.mode == int(2):
+        _files_dst = tabulate_helper2.chunk_data(data=_files_dst, chunk_size=_dataclass.cmax)
+        worker_enum_delete_tasks = Worker(
+            target=main_enum_delete_tasks,
+            args=(_files_dst, {'dir_src': dir_src, 'dir_dst': dir_dst}),
+            kwargs={}
+        )
         worker_enum_delete_tasks.start()
-
-    # wait for results back from enumeration workers
-    _copy_tasks = await worker_enum_copy_tasks.join()
-    if _mode == int(1) or _mode == int(2):
+    # wait for copy new enumerators
+    if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        _copy_tasks = await worker_enum_copy_tasks.join()
+    # wait for update enumerators
+    if _dataclass.mode == int(1) or _dataclass.mode == int(2):
         _update_tasks = await worker_enum_update_tasks.join()
-    if _mode == int(2):
+    # wait for delete enumerators
+    if _dataclass.mode == int(2):
         _delete_tasks = await worker_enum_delete_tasks.join()
-
-    # handle enumeration results: copy
-    if None not in _copy_tasks:
-        # un-chunk and qualify/disqualify lists: (vet results while un-chunking the list)
-        _copy_tasks[:] = [item for sublist in _copy_tasks for item in sublist if item is not None and len(item) == 5 and isinstance(item[1], float) and isinstance(item[2], int) and isinstance(item[3], str) and isinstance(item[4], str)]
-    else:
-        _copy_tasks = []
-    # handle enumeration results: update
-    if _mode == int(1) or _mode == int(2):
+    # format and check copy new tasks
+    if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+        if None not in _copy_tasks:
+            _copy_tasks[:] = [item for sublist in _copy_tasks for item in sublist if item is not None and len(item) == 5 and isinstance(item[1], float) and isinstance(item[2], int) and isinstance(item[3], str) and isinstance(item[4], str)]
+        else:
+            _copy_tasks = []
+        if shift_dataclass.verbose_level_1 is True:
+            [print(f'{get_dt()} {cprint.color(s="[COPY NEW]", c="G")} {cprint.color(s=str(_copy_task[0]), c=c_data)} {cprint.color(s="[->]", c="G")} {cprint.color(s=str(_copy_task[3]), c=c_data)}') for _copy_task in _copy_tasks]
+    # format and check update tasks
+    if _dataclass.mode == int(1) or _dataclass.mode == int(2):
         if None not in _update_tasks:
-            # un-chunk and qualify/disqualify lists: (vet results while un-chunking the list)
             _update_tasks[:] = [item for sublist in _update_tasks for item in sublist if item is not None and len(item) == 5 and isinstance(item[1], float) and isinstance(item[2], int) and isinstance(item[3], str) and isinstance(item[4], str)]
         else:
             _update_tasks = []
-    # handle enumeration results: delete
-    if _mode == int(2):
+        if shift_dataclass.verbose_level_1 is True:
+            [print(f'{get_dt()} {cprint.color(s="[UPDATE]", c="B")} {cprint.color(s=str(_update_task[0]), c=c_data)} {cprint.color(s="[->]", c="B")} {cprint.color(s=str(_update_task[3]), c=c_data)}') for _update_task in _update_tasks]
+    # format and check delete tasks
+    if _dataclass.mode == int(2):
         if None not in _delete_tasks:
-            # un-chunk and qualify/disqualify lists: (vet results while un-chunking the list)
             _delete_tasks[:] = [item for sublist in _delete_tasks for item in sublist if item is not None and len(item) == 5 and isinstance(item[1], float) and isinstance(item[2], int) and isinstance(item[3], str) and isinstance(item[4], str)]
         else:
             _delete_tasks = []
-
-    # display results if verbose_level_1
-    if shift_dataclass.verbose_level_1 is True:
-        [print(f'{get_dt()} {cprint.color(s="[COPY NEW]", c="G")} {cprint.color(s=str(_copy_task[0]), c=c_data)} {cprint.color(s="[->]", c="G")} {cprint.color(s=str(_copy_task[3]), c=c_data)}') for _copy_task in _copy_tasks]
-        [print(f'{get_dt()} {cprint.color(s="[UPDATE]", c="B")} {cprint.color(s=str(_update_task[0]), c=c_data)} {cprint.color(s="[->]", c="B")} {cprint.color(s=str(_update_task[3]), c=c_data)}') for _update_task in _update_tasks]
-        [print(f'{get_dt()} {cprint.color(s="[DELETE]", c="Y")} {cprint.color(s=str(_delete_task[0]), c=c_data)}') for _delete_task in _delete_tasks]
-
+        if shift_dataclass.verbose_level_1 is True:
+            [print(f'{get_dt()} {cprint.color(s="[DELETE]", c="Y")} {cprint.color(s=str(_delete_task[0]), c=c_data)}') for _delete_task in _delete_tasks]
     # display enumeration time
     print(f'{get_dt()} {cprint.color(s=f"[ENUMERATION] [TIME]", c=c_tag)} {cprint.color(s=time.perf_counter()-t_enum, c=c_data)}\n' if shift_dataclass.verbose_level_0 is True else "", end="")
-
     # display number of tasks ahead
     print(f'{get_dt()} {cprint.color(s="[TASKS]", c=c_tag)} {cprint.color(s="( Copy: ", c=c_tasks)} {cprint.color(s=(str(len(_copy_tasks))), c="G")} {cprint.color(s=") ( Update:", c=c_tasks)} {cprint.color(s=(str(len(_update_tasks))), c="B")} {cprint.color(s=") ( Delete:", c=c_tasks)} {cprint.color(s=(str(len(_delete_tasks))), c="Y")} {cprint.color(s=") (Total:", c=c_tasks)} {cprint.color(s=str(len(_copy_tasks)+len(_update_tasks)+len(_delete_tasks)), c="W")} {cprint.color(s=")", c=c_tasks)}')
 
+    # --------------------------------------------------------------------------------------------> STORAGE CHECK START
+
     # storage check: calculate bytes needed in destination
     total_sz = int(0)
-    for sublist in _copy_tasks:
-        total_sz += int(sublist[2])
-    for sublist in _update_tasks:
-        total_sz += int(sublist[2])
-    if _dataclass.no_bin is False:
-        for sublist in _delete_tasks:
-            total_sz += int(sublist[2])
+    total_sz += sum([sublist[2] for sublist in _copy_tasks])
+    total_sz += sum([sublist[2] for sublist in _update_tasks])
+    total_sz += sum([sublist[2] for sublist in _delete_tasks])
 
     # storage check: display bytes required in destination and free bytes in destination
     print(f'{get_dt()} {cprint.color(s=f"[DISK]", c=c_tag)} {cprint.color(s=F"Available storage needed: {str(convert_bytes(total_sz))}. (Available: {str(convert_bytes(free_disk_space(_path=dir_dst)))})", c=c_data)}')
 
+    # --------------------------------------------------------------------------------------------> OPERATION START
+
+    # if there is anything to do
     if total_sz > 0:
 
         # storage check: check if there is enough space in the destination
         if await asyncio.to_thread(out_of_disk_space, _path=dir_dst, _size=total_sz) is False:
-
-            # initiate lists for final results
-            _copied_final_results, _updated_final_results, _deleted_final_results = [], [], []
-
-            # initiate lists for final results further sorted
-            _copied, _updated, _deleted, _failed_copy, _failed_update, _failed_delete = [], [], [], [], [], []
 
             # ask user if they wish to continue
             if await user_accept(_dataclass=_dataclass) is True:
@@ -573,45 +576,41 @@ async def main(_dataclass: dataclasses.dataclass):
                 t_main_operation = time.perf_counter()
 
                 # run copy (async)
-                chunks = tabulate_helper2.chunk_data(data=_copy_tasks, chunk_size=_dataclass.cmax)
-                for chunk in chunks:
-                    tasks = []
-                    [tasks.append(asyncio.create_task(async_write(_data=sublist, _dataclass=_dataclass))) for sublist in chunk]
-                    _copied_final_results.append(await asyncio.gather(*tasks))
+                if _dataclass.mode == int(0) or _dataclass.mode == int(1) or _dataclass.mode == int(2):
+                    chunks = tabulate_helper2.chunk_data(data=_copy_tasks, chunk_size=_dataclass.cmax)
+                    for chunk in chunks:
+                        tasks = []
+                        [tasks.append(asyncio.create_task(async_write(_data=sublist, _dataclass=_dataclass))) for sublist in chunk]
+                        _copied_final_results.append(await asyncio.gather(*tasks))
+                    _copied_final_results[:] = [item for sublist in _copied_final_results for item in sublist]
+                    [_failed_copy.append(sublist) for sublist in _copied_final_results if sublist[-1] is not True and sublist[4] == '[COPYING]']
+                    [_copied.append(sublist) for sublist in _copied_final_results if sublist[-1] is True and sublist[4] == '[COPYING]']
 
                 # run update (async)
-                chunks = tabulate_helper2.chunk_data(data=_update_tasks, chunk_size=_dataclass.cmax)
-                for chunk in chunks:
-                    tasks = []
-                    [tasks.append(asyncio.create_task(async_write(_data=sublist, _dataclass=_dataclass))) for sublist in chunk]
-                    _updated_final_results.append(await asyncio.gather(*tasks))
+                if _dataclass.mode == int(0) or _dataclass.mode == int(1):
+                    chunks = tabulate_helper2.chunk_data(data=_update_tasks, chunk_size=_dataclass.cmax)
+                    for chunk in chunks:
+                        tasks = []
+                        [tasks.append(asyncio.create_task(async_write(_data=sublist, _dataclass=_dataclass))) for sublist in chunk]
+                        _updated_final_results.append(await asyncio.gather(*tasks))
+                    _updated_final_results[:] = [item for sublist in _updated_final_results for item in sublist]
+                    [_updated.append(sublist) for sublist in _updated_final_results if sublist[-1] is True and sublist[4] == '[UPDATING]']
+                    [_failed_update.append(sublist) for sublist in _updated_final_results if sublist[-1] is not True and sublist[4] == '[UPDATING]']
 
                 # run delete (sync only)
-                tasks = []
-                [tasks.append(asyncio.create_task(async_remove_file(_data=sublist, _dataclass=_dataclass))) for sublist in _delete_tasks]
-                _deleted_final_results.append(await asyncio.gather(*tasks))
-
-                # finally remove dirs not in source (sync only)
-                if _mode == int(2):
+                if _dataclass.mode == int(2):
+                    tasks = []
+                    [tasks.append(asyncio.create_task(async_remove_file(_data=sublist, _dataclass=_dataclass))) for sublist in _delete_tasks]
+                    _deleted_final_results.append(await asyncio.gather(*tasks))
                     [_remove_dirs(_path=item_dir, _dataclass=_dataclass) for item_dir in _directories_dst[0]]
+                    _deleted_final_results[:] = [item for sublist in _deleted_final_results for item in sublist]
+                    [_deleted.append(sublist) for sublist in _deleted_final_results if sublist[-1] is True and sublist[4] == '[DELETING]']
+                    [_failed_delete.append(sublist) for sublist in _deleted_final_results if sublist[-1] is not True and sublist[4] == '[DELETING]']
 
+                # display time
                 print(f'{get_dt()} {cprint.color(s=f"[MAIN OPERATION] [TIME]", c=c_tag)} {cprint.color(s=time.perf_counter() - t_main_operation, c=c_data)}\n' if shift_dataclass.verbose_level_0 is True else "", end="")
-
             else:
                 print(f'{get_dt()} {cprint.color(s=f"[ABORTING] [MAIN OPERATION]", c=c_tag)}')
-
-            # unpack results
-            _copied_final_results[:] = [item for sublist in _copied_final_results for item in sublist]
-            _updated_final_results[:] = [item for sublist in _updated_final_results for item in sublist]
-            _deleted_final_results[:] = [item for sublist in _deleted_final_results for item in sublist]
-
-            # sort results
-            [_copied.append(sublist) for sublist in _copied_final_results if sublist[-1] is True and sublist[4] == '[COPYING]']
-            [_updated.append(sublist) for sublist in _updated_final_results if sublist[-1] is True and sublist[4] == '[UPDATING]']
-            [_deleted.append(sublist) for sublist in _deleted_final_results if sublist[-1] is True and sublist[4] == '[DELETING]']
-            [_failed_copy.append(sublist) for sublist in _copied_final_results if sublist[-1] is not True and sublist[4] == '[COPYING]']
-            [_failed_update.append(sublist) for sublist in _updated_final_results if sublist[-1] is not True and sublist[4] == '[UPDATING]']
-            [_failed_delete.append(sublist) for sublist in _deleted_final_results if sublist[-1] is not True and sublist[4] == '[DELETING]']
 
             # display final results summary
             print(f'{get_dt()} {cprint.color(s="[SUCCEEDED]", c=c_tag)} {cprint.color(s="( Copied: ", c=c_tasks)} {cprint.color(s=(str(len(_copied))), c="G")} {cprint.color(s=") ( Updated:", c=c_tasks)} {cprint.color(s=(str(len(_updated))), c="B")} {cprint.color(s=") ( Deleted:", c=c_tasks)} {cprint.color(s=(str(len(_deleted))), c="Y")} {cprint.color(s=") (Total:", c=c_tasks)} {cprint.color(s=(str(len(_copied) + len(_updated) + len(_deleted))), c="W")} {cprint.color(s=")", c=c_tasks)}')
@@ -702,7 +701,7 @@ if __name__ == '__main__':
         #          to predefined hardcoded bool/int values and have hardcoded defaults.
         #
 
-        # source todo: testing with different paths (like network paths for example) before making -s valid
+        # source
         source = None
         if '-s' in stdin:
             # get source path
@@ -720,7 +719,7 @@ if __name__ == '__main__':
                     # finally allow source to be set
                     source = source_check
 
-        # destination  todo: testing with different paths (like network paths for example) before making -d valid
+        # destination
         destination = None
         if '-d' in stdin:
             # get destination path
