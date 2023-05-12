@@ -56,6 +56,7 @@ class ShiftDataClass:
     source: str
     destination: str
     no_bin: bool
+    ignore_failed: bool
 
 
 _dataclass = dataclasses.dataclass
@@ -131,11 +132,14 @@ def _remove_dirs(_path: str, _dataclass: dataclasses.dataclass):
                         print(f'{get_dt()} {cprint.color(s="[DELETING] [DIRECTORY]", c="Y")} {cprint.color(s=_path, c=c_data)}')
                     shutil.rmtree(_path, ignore_errors=False)
         except FileNotFoundError as e:
-            print(f'{get_dt()} [FileNotFoundError] [DELETE DIR] {_path} {str(e)}')
+            if _dataclass.debug is True:
+                print(f'{get_dt()} [FileNotFoundError] [_remove_dirs] {_path} {str(e)}')
         except PermissionError as e:
-            print(f'{get_dt()} [PermissionError] [DELETE DIR] {_path} {str(e)}')
+            if _dataclass.debug is True:
+                print(f'{get_dt()} [PermissionError] [_remove_dirs] {_path} {str(e)}')
         except OSError as e:
-            print(f'{get_dt()} [OSError] [DELETE DIR] {_path} {str(e)}')
+            if _dataclass.debug is True:
+                print(f'{get_dt()} [OSError] [_remove_dirs] {_path} {str(e)}')
 
 
 async def async_remove_file(_data: list, _dataclass: dataclasses.dataclass) -> list:
@@ -152,13 +156,15 @@ async def async_remove_file(_data: list, _dataclass: dataclasses.dataclass) -> l
                 os.remove(_data[0])
             _data.append(True)
     except FileNotFoundError as e:
-        print(f'{get_dt()} [FileNotFoundError] [DELETE FILE] {_data} {str(e)}')
-        _data.append(f'[FileNotFoundError] [DELETE FILE] {str(e)}')
+        if _dataclass.debug is True:
+            print(f'{get_dt()} [FileNotFoundError] [async_remove_file] {_data} {str(e)}')
+        _data.append(f'[FileNotFoundError] [async_remove_file] {str(e)}')
     except PermissionError as e:
-        print(f'{get_dt()} [PermissionError] [DELETE FILE] {_data} {str(e)}')
-        _data.append(f'[PermissionError] [DELETE FILE] {str(e)}')
+        if _dataclass.debug is True:
+            _data.append(f'[PermissionError] [async_remove_file] {str(e)}')
     except OSError as e:
-        print(f'{get_dt()} [OSError] [DELETE FILE] {_data} {str(e)}')
+        if _dataclass.debug is True:
+            print(f'{get_dt()} [OSError] [async_remove_file] {_data} {str(e)}')
         _data.append(f'[OSError] [DELETE FILE] {str(e)}')
 
     return _data
@@ -198,10 +204,12 @@ async def async_write(_data: list, _dataclass: dataclasses.dataclass()) -> list:
                         _data.append(True)
 
         except FileNotFoundError as e:
-            print(f'{get_dt()} [FileNotFoundError] {_data} {str(e)}')
+            if _dataclass.debug is True:
+                print(f'{get_dt()} [FileNotFoundError] [async_write] {_data} {str(e)}')
             _data.append(str(e))
         except PermissionError as e:
-            print(f'{get_dt()} [PermissionError] {_data} {str(e)}')
+            if _dataclass.debug is True:
+                print(f'{get_dt()} [PermissionError] [async_write] {_data} {str(e)}')
             _data.append(str(e))
     return _data
 
@@ -213,9 +221,11 @@ async def scan_check(_file: str) -> list:
         sz = stat_file.st_size
         return [_file, mtime, sz]
     except FileNotFoundError as e:
-        print(f'{get_dt()} [FileNotFoundError] {_file} {str(e)}')
+        if _dataclass.debug is True:
+            print(f'{get_dt()} [FileNotFoundError] [scan_check] {_file} {str(e)}')
     except PermissionError as e:
-        print(f'{get_dt()} [PermissionError] {_file} {str(e)}')
+        if _dataclass.debug is True:
+            print(f'{get_dt()} [PermissionError] [scan_check] {_file} {str(e)}')
 
 
 async def get_copy_tasks(sublist: list, dir_src: str, dir_dst: str) -> list:
@@ -596,8 +606,8 @@ async def main(_dataclass: dataclasses.dataclass):
                         [tasks.append(asyncio.create_task(async_write(_data=sublist, _dataclass=_dataclass))) for sublist in chunk]
                         _copied_final_results.append(await asyncio.gather(*tasks))
                     _copied_final_results[:] = [item for sublist in _copied_final_results for item in sublist]
-                    [_failed_copy.append(sublist) for sublist in _copied_final_results if sublist[-1] is not True and sublist[4] == '[COPYING]']
                     [_copied.append(sublist) for sublist in _copied_final_results if sublist[-1] is True and sublist[4] == '[COPYING]']
+                    [_failed_copy.append(sublist) for sublist in _copied_final_results if sublist[-1] is not True and sublist[4] == '[COPYING]']
 
                 # run update (async)
                 if _dataclass.mode == int(1) or _dataclass.mode == int(2):
@@ -627,7 +637,12 @@ async def main(_dataclass: dataclasses.dataclass):
                 print(f'{get_dt()} {cprint.color(s="[SUCCEEDED]", c=c_tag)} {cprint.color(s="( Copied: ", c=c_tasks)} {cprint.color(s=(str(len(_copied))), c="G")} {cprint.color(s=") ( Updated:", c=c_tasks)} {cprint.color(s=(str(len(_updated))), c="B")} {cprint.color(s=") ( Deleted:", c=c_tasks)} {cprint.color(s=(str(len(_deleted))), c="Y")} {cprint.color(s=") (Total:", c=c_tasks)} {cprint.color(s=(str(len(_copied) + len(_updated) + len(_deleted))), c="W")} {cprint.color(s=")", c=c_tasks)}')
                 print(f'{get_dt()} {cprint.color(s="[FAILED]", c=c_tag)} {cprint.color(s="( Copy: ", c=c_data)} {cprint.color(s=(str(len(_failed_copy))), c=c_data)} {cprint.color(s=") ( Update:", c=c_data)} {cprint.color(s=(str(len(_failed_update))), c=c_data)} {cprint.color(s=") ( Delete:", c=c_data)} {cprint.color(s=(str(len(_failed_delete))), c=c_data)} {cprint.color(s=") ( Total:", c=c_data)} {cprint.color(s=(str(len(_failed_copy) + len(_failed_update) + len(_failed_delete))), c=c_data)} {cprint.color(s=")", c=c_data)}')
 
-                # todo: log failed -> shift -l
+                # optionally display failed tasks
+                if _dataclass.ignore_failed is False:
+                    print('')
+                    [print(f'{get_dt()} {cprint.color(s="[FAILED COPY]", c="R")} {cprint.color(s=failed_task[-1], c=c_data)}') for failed_task in _failed_copy]
+                    [print(f'{get_dt()} {cprint.color(s="[FAILED UPDATE]", c="R")} {cprint.color(s=failed_task[-1], c=c_data)}') for failed_task in _failed_update]
+                    [print(f'{get_dt()} {cprint.color(s="[FAILED DELETE]", c="R")} {cprint.color(s=failed_task[-1], c=c_data)}') for failed_task in _failed_delete]
             else:
                 print(f'{get_dt()} {cprint.color(s=f"[ABORTING] [MAIN OPERATION]", c=c_tag)}')
         else:
@@ -700,6 +715,11 @@ if __name__ == '__main__':
         if '--no-bin' in stdin:
             no_bin = True
 
+        # display failed read/writes at program end
+        ignore_failed = False
+        if '--ignore' in stdin:
+            ignore_failed = True
+
         # Note:    Extra single backslash creates a single entry in stdin which includes not only source but also -d
         #          and -d some of -d path (if -s and -d specified last). This is expected behaviour and is in
         #          my opinion concerning and so will be fixed in later releases.
@@ -765,7 +785,8 @@ if __name__ == '__main__':
                                                      mode=mode,
                                                      source=source,
                                                      destination=destination,
-                                                     no_bin=no_bin)
+                                                     no_bin=no_bin,
+                                                     ignore_failed=ignore_failed)
                     if live_mode is False:
                         # run once
                         asyncio.run(main(_dataclass=shift_dataclass))
