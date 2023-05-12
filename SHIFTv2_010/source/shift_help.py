@@ -22,7 +22,7 @@ def display_help():
     print(f'{cprint.color(s=" --live", c=c_arg)}      {cprint.color(s="Live Mode", c=c_tag)}        {cprint.color(s="Enables continuous backup mode. (Resource intensive).", c=c_des)}')
     print(f'{cprint.color(s="                              Recommended to instead run manually/task-scheduler/chronjob.", c=c_des)}')
     print(f'{cprint.color(s=" --no-bin", c=c_arg)}    {cprint.color(s="No Recycle", c=c_tag)}       {cprint.color(s="Do not send files to a recycle bin. (Used with -mirror).", c=c_des)}')
-    print(f'{cprint.color(s=" --ignore", c=c_arg)}    {cprint.color(s="Ignore Failed", c=c_tag)}    {cprint.color(s="Do not send files to a recycle bin. (Used with -mirror).", c=c_des)}')
+    print(f'{cprint.color(s=" --ignore", c=c_arg)}    {cprint.color(s="Ignore Failed", c=c_tag)}    {cprint.color(s="Do not display failed tasks upon summary.", c=c_des)}')
     print(f'{cprint.color(s=" -cmax", c=c_arg)}       {cprint.color(s="CMAX", c=c_tag)}             {cprint.color(s="Specify async multiprocess chunk sizes in digits (Performance +-).", c=c_des)}')
     print(f'{cprint.color(s="                              Optional. Default 100. Accepted values in range 1-100.", c=c_des)}')
     print('')

@@ -17,7 +17,7 @@ SHIFTv2 is file backup software. Asynchronous & multiprocess.
    --live      Live Mode        Enables continuous backup mode. (Resource intensive).
                                  Recommended to instead run manually/task-scheduler/chronjob.
    --no-bin    No Recycle       Do not send files to a recycle bin. (Used with -mirror).
-   --ignore    Ignore Failed    Do not send files to a recycle bin. (Used with -mirror).
+   --ignore    Ignore Failed    Do not display failed tasks upon summary.
    -cmax       CMAX             Specify async multiprocess chunk sizes in digits (Performance +-).
                                  Optional. Default 100. Accepted values in range 1-100.
 
