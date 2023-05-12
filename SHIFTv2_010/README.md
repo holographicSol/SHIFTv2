@@ -6,32 +6,33 @@ SHIFTv2 is file backup software. Asynchronous & multiprocess.
 
 [ SHIFTv2 ]
 
-   --copy      Copy New         Only copy source files that are not in destination.
-   --update    Update           Copy and update existing. Compares modified times and file sizes.
-   --mirror    Mirror           Copy, update then delete files/directories that are not in source.
 
-   -s          Source           Specify source PATH. Files are copied from source.
-                                 Omit a trailing single backslash or it will escape the -s string.
-   -d          Destination      Specify destination PATH. Files are copied to and removed from destination.
-                                 Omit a trailing single backslash or it will escape the -d string.
-   --live      Live Mode        Enables continuous backup mode. (Resource intensive).
-                                 Recommended to instead run manually/task-scheduler/chronjob.
-   --no-bin    No Recycle       Do not send files to a recycle bin. (Used with -mirror).
-   --ignore    Ignore Failed    Do not display failed tasks upon summary.
-   -cmax       CMAX             Specify async multiprocess chunk sizes in digits (Performance +-).
-                                 Optional. Default 100. Accepted values in range 1-100.
+      --copy      Copy New         Only copy source files that are not in destination.
+      --update    Update           Copy and update existing. Compares modified times and file sizes.
+      --mirror    Mirror           Copy, update then delete files/directories that are not in source.
 
-   -y          Assume Yes       Disables confirmation input prompts.
-   -v          Verbosity        Increase Verbosity.
-   -vv         Verbosity+       Further Increase Verbosity.
-   -h          Help             Displays this help message.
+      -s          Source           Specify source PATH. Files are copied from source.
+                                    Omit a trailing single backslash or it will escape the -s string.
+      -d          Destination      Specify destination PATH. Files are copied to and removed from destination.
+                                    Omit a trailing single backslash or it will escape the -d string.
+      --live      Live Mode        Enables continuous backup mode. (Resource intensive).
+                                    Recommended to instead run manually/task-scheduler/chronjob.
+      --no-bin    No Recycle       Do not send files to a recycle bin. (Used with -mirror).
+      --ignore    Ignore Failed    Do not display failed tasks upon summary.
+      -cmax       CMAX             Specify async multiprocess chunk sizes in digits (Performance +-).
+                                    Optional. Default 100. Accepted values in range 1-100.
 
-   Standard Example:    shift -vv -mirror --no-bin -s "D:\Documents" -d "X:\Document"
-   Standard Example:    shift -vv -mirror --no-bin -s "/home/FooBar/Documents" -d "/media/FooBar/Documents"
-   Network Example:     shift --mirror -vv -s "D:\Documents" -d "\\Desktop-FooBar\Documents"
-   Network Example:     shift --mirror -vv -s "\\Desktop-Foo\Documents" -d "\\Desktop-Bar\Documents"
+      -y          Assume Yes       Disables confirmation input prompts.
+      -v          Verbosity        Increase Verbosity.
+      -vv         Verbosity+       Further Increase Verbosity.
+      -h          Help             Displays this help message.
 
-   Written by Benjamin Jack Cullen.
+      Standard Example:    shift -vv -mirror --no-bin -s "D:\Documents" -d "X:\Document"
+      Standard Example:    shift -vv -mirror --no-bin -s "/home/FooBar/Documents" -d "/media/FooBar/Documents"
+      Network Example:     shift --mirror -vv -s "D:\Documents" -d "\\Desktop-FooBar\Documents"
+      Network Example:     shift --mirror -vv -s "\\Desktop-Foo\Documents" -d "\\Desktop-Bar\Documents"
+
+      Written by Benjamin Jack Cullen.
 
 
 [ SHIFTv2 ] Copy New, Update, Mirror:
