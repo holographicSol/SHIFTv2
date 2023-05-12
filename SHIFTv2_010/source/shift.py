@@ -681,6 +681,7 @@ if __name__ == '__main__':
 
         # live (run continuously until keyboard interrupt) currently recommended to use CTRL+PAUSE/BREAK.
         live_mode = False
+        live_mode_sleep_interval = 5
         if '--live' in stdin:
             live_mode = True
 
@@ -778,7 +779,7 @@ if __name__ == '__main__':
                                 print()
                                 exit(0)
                             # wait
-                            time.sleep(5)
+                            time.sleep(live_mode_sleep_interval)
                 else:
                     print(f'\n{get_dt()} {cprint.color(s="[INVALID] A valid destination path must be specified (-d) with trailing escape characters omitted. See -h for help.", c="R")}')
             else:
