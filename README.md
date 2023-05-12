@@ -6,6 +6,7 @@ SHIFTv2 is file backup software. Asynchronous & multiprocess.
 
 [ SHIFTv2 ]
 
+
    --copy      Copy New         Only copy source files that are not in destination.
    --update    Update           Copy and update existing. Compares modified times and file sizes.
    --mirror    Mirror           Copy, update then delete files/directories that are not in source.
