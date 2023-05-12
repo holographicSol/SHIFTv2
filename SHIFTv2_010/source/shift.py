@@ -622,13 +622,14 @@ async def main(_dataclass: dataclasses.dataclass):
 
                 # display time
                 print(f'{get_dt()} {cprint.color(s=f"[MAIN OPERATION] [TIME]", c=c_tag)} {cprint.color(s=time.perf_counter() - t_main_operation, c=c_data)}\n' if shift_dataclass.verbose_level_0 is True else "", end="")
+
+                # display final results summary
+                print(f'{get_dt()} {cprint.color(s="[SUCCEEDED]", c=c_tag)} {cprint.color(s="( Copied: ", c=c_tasks)} {cprint.color(s=(str(len(_copied))), c="G")} {cprint.color(s=") ( Updated:", c=c_tasks)} {cprint.color(s=(str(len(_updated))), c="B")} {cprint.color(s=") ( Deleted:", c=c_tasks)} {cprint.color(s=(str(len(_deleted))), c="Y")} {cprint.color(s=") (Total:", c=c_tasks)} {cprint.color(s=(str(len(_copied) + len(_updated) + len(_deleted))), c="W")} {cprint.color(s=")", c=c_tasks)}')
+                print(f'{get_dt()} {cprint.color(s="[FAILED]", c=c_tag)} {cprint.color(s="( Copy: ", c=c_data)} {cprint.color(s=(str(len(_failed_copy))), c=c_data)} {cprint.color(s=") ( Update:", c=c_data)} {cprint.color(s=(str(len(_failed_update))), c=c_data)} {cprint.color(s=") ( Delete:", c=c_data)} {cprint.color(s=(str(len(_failed_delete))), c=c_data)} {cprint.color(s=") ( Total:", c=c_data)} {cprint.color(s=(str(len(_failed_copy) + len(_failed_update) + len(_failed_delete))), c=c_data)} {cprint.color(s=")", c=c_data)}')
+
+                # todo: log failed -> shift -l
             else:
                 print(f'{get_dt()} {cprint.color(s=f"[ABORTING] [MAIN OPERATION]", c=c_tag)}')
-
-            # display final results summary
-            print(f'{get_dt()} {cprint.color(s="[SUCCEEDED]", c=c_tag)} {cprint.color(s="( Copied: ", c=c_tasks)} {cprint.color(s=(str(len(_copied))), c="G")} {cprint.color(s=") ( Updated:", c=c_tasks)} {cprint.color(s=(str(len(_updated))), c="B")} {cprint.color(s=") ( Deleted:", c=c_tasks)} {cprint.color(s=(str(len(_deleted))), c="Y")} {cprint.color(s=") (Total:", c=c_tasks)} {cprint.color(s=(str(len(_copied) + len(_updated) + len(_deleted))), c="W")} {cprint.color(s=")", c=c_tasks)}')
-            print(f'{get_dt()} {cprint.color(s="[FAILED]", c=c_tag)} {cprint.color(s="( Copy: ", c=c_data)} {cprint.color(s=(str(len(_failed_copy))), c=c_data)} {cprint.color(s=") ( Update:", c=c_data)} {cprint.color(s=(str(len(_failed_update))), c=c_data)} {cprint.color(s=") ( Delete:", c=c_data)} {cprint.color(s=(str(len(_failed_delete))), c=c_data)} {cprint.color(s=") ( Total:", c=c_data)} {cprint.color(s=(str(len(_failed_copy) + len(_failed_update) + len(_failed_delete))), c=c_data)} {cprint.color(s=")", c=c_data)}')
-
         else:
             print(f'{get_dt()} {cprint.color(s="[WARNING] Not enough disk space! Free up available space.", c="R")}')
 

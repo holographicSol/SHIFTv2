@@ -20,7 +20,7 @@ def display_help():
     print(f'{cprint.color(s=" -d", c=c_arg)}          {cprint.color(s="Destination", c=c_tag)}    {cprint.color(s="Specify destination PATH. Files will be copied to (and removed from) destination PATH.", c=c_des)}')
     print(f'{cprint.color(s="                            Omit a trailing single backslash or it will escape the -d string.", c=c_des)}')
     print(f'{cprint.color(s=" --live", c=c_arg)}      {cprint.color(s="Live Mode", c=c_tag)}      {cprint.color(s="Enables continuous backup mode (Live Mode).", c=c_des)}')
-    print(f'{cprint.color(s="                            Use only if more suitable than manual/task-scheduling(Windows)/chron-job(Linux) (Recommended).", c=c_des)}')
+    print(f'{cprint.color(s="                            Recommended to run manually/task-scheduling(Windows)/chron-job(Linux) however Live Mode is an option.", c=c_des)}')
     print(f'{cprint.color(s=" --no-bin", c=c_arg)}    {cprint.color(s="No Recycle", c=c_tag)}     {cprint.color(s="Do not send files to a recycle bin. (Used with -mirror).", c=c_des)}')
     print(f'{cprint.color(s=" -cmax", c=c_arg)}       {cprint.color(s="CMAX", c=c_tag)}           {cprint.color(s="Specify async multiprocess chunk sizes in digits (Performance +-).", c=c_des)}')
     print(f'{cprint.color(s="                            Optional. Default 100. Accepted values in range 1-100.", c=c_des)}')
